@@ -1,1 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Hangman</title>
+  
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+  <!-- Link to external CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  
+  <!-- Optional: Additional JavaScript (if needed) -->
+  <script defer src="{{ url_for('static', filename='script.js') }}"></script>
 
+<script>
+  let musicWindow;
+
+  function openMusicWindow() {
+    if (!musicWindow || musicWindow.closed) {
+      musicWindow = window.open("music.html", "musicWindow", "width=1,height=1");
+    }
+  }
+
+  function toggleMusic() {
+    if (!musicWindow || musicWindow.closed) {
+      openMusicWindow();
+    } else {
+      const currentState = localStorage.getItem("musicState");
+      if (currentState === "playing") {
+        musicWindow.postMessage("pause", "*");
+        localStorage.setItem("musicState", "paused");
+        document.getElementById("music-btn").textContent = "🔇";
+      } else {
+        musicWindow.postMessage("play", "*");
+        localStorage.setItem("musicState", "playing");
+        document.getElementById("music-btn").textContent = "🔊";
+      }
+    }
+  }
+
+  // Open music player window when page loads
+  window.onload = () => {
+    openMusicWindow();
+
+    // Set icon based on state
+    const musicBtn = document.getElementById("music-btn");
+    const state = localStorage.getItem("musicState");
+    if (musicBtn) {
+      musicBtn.textContent = state === "paused" ? "🔇" : "🔊";
+    }
+  };
+</script>
+
+
+  
+  <style>
+    /* Main body styling */
+    body {
+      font-family: 'Creepster', sans-serif;
+      background-color: black;
+      color: white;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    
+    /* Container for main content */
+    .container {
+      background: rgba(0, 0, 0, 0.8); /* semi-transparent black */
+      padding: 50px;
+      border: 3px solid red;
+      border-radius: 10px;
+      box-shadow: 0px 0px 15px crimson;
+      text-align: center;
+      max-width: 500px;
+    }
+.header {  
+        padding: 20px;  
+        text-align: center;  
+        font-size: 36px;  
+        color: white;  
+        text-shadow: 3px 3px 10px red;  
+    }  
+    
+    /* ✅ Top-right Buttons */
+        .top-right-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: white;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+    
+    /* Start button styling */
+    .start-btn {
+      background: black;
+      color: white;
+      padding: 15px 25px;
+      border: 2px solid red;
+      font-size: 20px;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: 0.3s;
+      box-shadow: 0px 0px 5px red;
+    }
+    
+    .start-btn:hover {
+      background: red;
+      color: black;
+      box-shadow: 0px 0px 15px crimson;
+    }
+    
+    /* Settings modal styling */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: black;
+      padding: 20px;
+      border: 2px solid red;
+      box-shadow: 0px 0px 20px red;
+      text-align: center;
+      z-index: 100;
+    }
+    
+    .modal h2 {
+      color: white;
+    }
+    
+    .modal button {
+      margin-top: 10px;
+      padding: 10px;
+      border: 2px solid red;
+      background: black;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    
+    .modal button:hover {
+      background: red;
+      color: black;
+    }
+    
+    /* Volume slider container styling */
+    .volume-container {
+      margin-top: 15px;
+      color: white;
+    }
+    
+    .volume-container label {
+      font-size: 18px;
+      margin-right: 10px;
+    }
+    
+    .volume-slider {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background music element -->
+  <!-- Autoplay with loop. Note: Some browsers may block autoplay with sound. -->
+  <audio id="bg-music" autoplay loop>
+    <source src="{{ url_for('static', filename='game.mpeg') }}" type="audio/mpeg">
+</audio>   
+  <!-- Top-right icon buttons -->
+  <div class="top-icons">
+    <!-- Toggle Music Button -->
+    <button onclick="toggleMusic()" title="Music"><i class="fas fa-music icon"></i></button>
+    </button>
+    <!-- Settings Button -->
+    <button class="icon-btn" onclick="toggleSettings()" title="Settings">
+      <i class="fas fa-cog"></i>
+    </button>
+  </div>
+  
+  <!-- Main container -->
+  <div class="container">
+    <!-- ✅ Header Section -->  
+<div class="header">  
+    <h1>Hangman</h1>  
+</div> 
+ <button class="start-btn" onclick="window.location.href='{{ url_for('levels') }}'">Start</button>
+  </div>
+  
+  <!-- Settings modal: only volume control is available -->
+  <div id="settings-modal" class="modal">
+    <h2>Settings</h2>
+    <div class="volume-container">
+      <label for="volume-slider">Music Volume:</label>
+      <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.1" value="0.5">
+    </div>
+  </div>
+  
+  <!-- JavaScript for music playback and settings control -->
+  <script>
+    // Try to autoplay music on page load
+    window.onload = function() {
+      const music = document.getElementById("bg-music");
+      music.play().then(() => {
+          console.log("Music is playing automatically.");
+      }).catch(error => {
+          console.error("Autoplay failed; user interaction may be required:", error);
+          // Optionally, display a button to start the music manually.
+      });
+      // Set initial volume based on slider's value
+      music.volume = document.getElementById("volume-slider").value;
+    };
+    
+    // Function to toggle music playback (play/pause)
+    function toggleMusic() {
+      const music = document.getElementById("bg-music");
+      const musicBtn = document.getElementById("music-btn");
+      const icon = musicBtn.querySelector("i");
+      
+      if (music.paused) {
+        music.play();
+        icon.classList.remove("fa-music");
+        icon.classList.add("fa-volume-up");
+      } else {
+        music.pause();
+        icon.classList.remove("fa-volume-up");
+        icon.classList.add("fa-music");
+      }
+    }
+    
+     // Toggle the Settings Modal
+  function toggleSettings() {
+      const modal = document.getElementById("settings-modal");
+      if (modal.style.display === "block") {
+          modal.style.display = "none";
+      } else {
+          modal.style.display = "block";
+      }
+  }
+    
+    // Volume slider: update music volume when slider value changes
+    const volumeSlider = document.getElementById("volume-slider");
+    volumeSlider.addEventListener("input", function() {
+      const music = document.getElementById("bg-music");
+      music.volume = this.value;
+    });
+
+ 
+  </script>
+</body>
+</html>
